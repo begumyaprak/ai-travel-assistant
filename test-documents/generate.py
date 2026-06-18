@@ -96,4 +96,38 @@ create_doc("travel-insurance-policy.docx", "TravelSafe Premium Insurance Policy"
     ]),
 ])
 
+# 4. Tokyo Destination Guide
+create_doc("tokyo-destination-guide.docx", "Tokyo Travel Destination Guide", [
+    ("Overview", [
+        "Tokyo, the capital of Japan, is one of the world's most dynamic and fascinating cities. A seamless blend of ultramodern technology and ancient tradition, Tokyo offers an extraordinary travel experience unlike anywhere else on earth.",
+        "The best time to visit Tokyo is during spring (late March to early May) for cherry blossoms, or autumn (October to November) for colorful foliage. Summers are hot and humid; winters are mild but can be cold.",
+    ]),
+    ("Top Attractions", [
+        "Senso-ji Temple (Asakusa): Tokyo's oldest and most iconic temple, founded in 645 AD. Entry is free and the temple is open 24 hours. The Nakamise shopping street leading to the temple is perfect for souvenirs.",
+        "Shibuya Crossing: One of the busiest pedestrian crossings in the world. Best viewed from the Starbucks or Mag's Park observation deck above the intersection. Completely free to experience.",
+        "Shinjuku Gyoen National Garden: A beautiful garden combining Japanese, French, and English landscape styles. Entrance fee is 500 JPY. Open Tuesday to Sunday, 9:00 AM to 4:30 PM. Especially stunning during cherry blossom season.",
+        "teamLab Planets (Toyosu): An immersive digital art museum. Tickets cost 3,200 JPY and must be booked online in advance. Open daily 9:00 AM to 9:00 PM.",
+        "Tsukiji Outer Market: The world-famous fish market. Best visited early morning (around 6:00 AM) for the freshest sushi breakfast. Free to enter; budget 2,000–4,000 JPY for a meal.",
+    ]),
+    ("Transportation", [
+        "Tokyo has one of the world's most efficient public transport systems. The IC card (Suica or Pasmo) can be used on all trains, subways, and buses. Load it at any station kiosk.",
+        "A single metro ride costs between 170 and 320 JPY depending on distance. Day passes are available for 600 JPY (Tokyo Metro only) or 1,000 JPY (all lines).",
+        "From Narita Airport to central Tokyo: Narita Express (N'EX) takes 60 minutes and costs 3,070 JPY. Limousine bus takes 90 minutes and costs 3,200 JPY. Taxis are available but expensive — expect 20,000–25,000 JPY.",
+        "From Haneda Airport to central Tokyo: Tokyo Monorail or Keikyu Line takes 20–30 minutes and costs 500–700 JPY.",
+    ]),
+    ("Food & Dining", [
+        "Tokyo has more Michelin-starred restaurants than any other city in the world. However, excellent food is available at every price point.",
+        "Ramen, sushi, tempura, yakitori, and tonkatsu are must-try dishes. Conveyor belt sushi (kaiten-zushi) is a fun and affordable option at 150–500 JPY per plate.",
+        "Convenience stores (7-Eleven, FamilyMart, Lawson) offer surprisingly high-quality meals for 500–800 JPY. Onigiri, sandwiches, and hot foods are available 24 hours.",
+        "Tipping is not customary in Japan and can even be considered rude. Service charges are never added to bills.",
+    ]),
+    ("Practical Information", [
+        "Currency: Japanese Yen (JPY). Japan is still largely cash-based — always carry sufficient yen. 7-Eleven ATMs reliably accept foreign cards.",
+        "Language: Japanese. English signage is available at major train stations and tourist areas. Translation apps (Google Translate camera mode) are very helpful.",
+        "Wi-Fi: Pocket Wi-Fi devices can be rented at the airport (around 700 JPY/day). Free Wi-Fi is available at most convenience stores and major tourist spots.",
+        "Emergency number: 110 (police), 119 (ambulance/fire). The Japan Visitor Hotline (+81-50-3816-2787) provides 24/7 assistance in English.",
+        "Etiquette: Remove shoes when entering traditional restaurants or ryokan. Avoid eating or drinking while walking. Queuing is strictly observed.",
+    ]),
+])
+
 print("\nAll documents created successfully in test-documents/")
