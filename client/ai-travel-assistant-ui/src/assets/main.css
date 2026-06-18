@@ -1,0 +1,52 @@
+@import './base.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Force PrimeVue Aura theme into light mode */
+:root {
+  color-scheme: light;
+}
+
+/* Override PrimeVue dark surface tokens */
+.p-select,
+.p-inputtext,
+.p-select-overlay {
+  background: #ffffff !important;
+  color: #1b1b23 !important;
+  border-color: #e4e1ed !important;
+}
+
+.p-select-overlay .p-select-list {
+  background: #ffffff !important;
+}
+
+.p-select-overlay .p-select-option {
+  background: #ffffff !important;
+  color: #1b1b23 !important;
+}
+
+.p-select-overlay .p-select-option:hover,
+.p-select-overlay .p-select-option.p-select-option-selected {
+  background: #f5f2fe !important;
+  color: #4648d4 !important;
+}
+
+.p-select .p-select-label,
+.p-select .p-select-placeholder {
+  color: #1b1b23 !important;
+}
+
+.p-select .p-select-placeholder {
+  color: #9ca3af !important;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f0eff8;
+  color: #1b1b23;
+}
