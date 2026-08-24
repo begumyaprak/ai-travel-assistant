@@ -8,9 +8,11 @@ namespace AiTravelAssistant.Application.QA.Models;
 /// <param name="ChunkContent">The extracted text content of the chunk.</param>
 /// <param name="PageReference">An optional page reference indicating the chunk's location in the source document.</param>
 /// <param name="RelevanceScore">The relevance score assigned by the search index (higher is more relevant).</param>
+/// <param name="IsSemanticScore"><see langword="true"/> when <paramref name="RelevanceScore"/> is a semantic reranker score on the 0–4 scale; otherwise it is a hybrid RRF score.</param>
 public record SearchResult(
     Guid DocumentId,
     string FileName,
     string ChunkContent,
     string? PageReference,
-    double RelevanceScore);
+    double RelevanceScore,
+    bool IsSemanticScore);

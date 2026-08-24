@@ -35,7 +35,7 @@ public class AzureAiSearchService : ISearchService
     /// </summary>
     /// <param name="queryVector">The embedding vector of the user's question.</param>
     /// <param name="query">The raw question text used for semantic re-ranking when a semantic configuration is set.</param>
-    /// <param name="topK">The maximum number of results to return.</param>
+    /// <param name="candidateCount">The number of retrieval candidates supplied to semantic ranking and returned to the caller.</param>
     /// <param name="destination">An optional OData destination filter.</param>
     /// <param name="category">An optional OData category filter.</param>
     /// <param name="cancellationToken">A token to observe for cancellation requests.</param>
@@ -43,21 +43,23 @@ public class AzureAiSearchService : ISearchService
     public async Task<IReadOnlyList<SearchResult>> SearchAsync(
         float[] queryVector,
         string query,
-        int topK,
+        int candidateCount,
         string? destination,
         string? category,
         CancellationToken cancellationToken)
     {
-        var options = new SearchOptions { Size = topK };
+        var options = new SearchOptions { Size = candidateCount };
 
-        var vectorQuery = new VectorizedQuery(queryVector) { KNearestNeighborsCount = topK };
+        var vectorQuery = new VectorizedQuery(queryVector) { KNearestNeighborsCount = candidateCount };
         vectorQuery.Fields.Add("contentVector");
         options.VectorSearch = new VectorSearchOptions();
         options.VectorSearch.Queries.Add(vectorQuery);
 
         var filters = new List<string>();
-        if (!string.IsNullOrEmpty(destination)) filters.Add($"destination eq '{destination}'");
-        if (!string.IsNullOrEmpty(category)) filters.Add($"category eq '{category}'");
+        if (!string.IsNullOrWhiteSpace(destination))
+            filters.Add($"destination eq '{EscapeODataStringLiteral(destination.Trim())}'");
+        if (!string.IsNullOrWhiteSpace(category))
+            filters.Add($"category eq '{EscapeODataStringLiteral(category.Trim())}'");
         if (filters.Count > 0) options.Filter = string.Join(" and ", filters);
 
         if (!string.IsNullOrEmpty(_settings.SemanticConfigurationName))
@@ -75,17 +77,22 @@ public class AzureAiSearchService : ISearchService
         await foreach (var result in response.Value.GetResultsAsync())
         {
             var doc = result.Document;
-            var score = result.SemanticSearch?.RerankerScore ?? result.Score ?? 0.0;
+            var semanticScore = result.SemanticSearch?.RerankerScore;
+            var score = semanticScore ?? result.Score ?? 0.0;
             results.Add(new SearchResult(
                 Guid.Parse(doc.DocumentId),
                 doc.FileName,
                 doc.Content,
                 doc.PageReference,
-                score));
+                score,
+                IsSemanticScore: semanticScore.HasValue));
         }
 
         return results;
     }
+
+    private static string EscapeODataStringLiteral(string value) =>
+        value.Replace("'", "''", StringComparison.Ordinal);
 
     /// <summary>
     /// Uploads a batch of document chunks to the Azure AI Search index.

@@ -25,6 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\AiTravelAssistant.Application\AiTravelAssistant.Application.csproj" />
     <ProjectReference Include="..\..\src\AiTravelAssistant.Domain\AiTravelAssistant.Domain.csproj" />
+    <ProjectReference Include="..\..\src\AiTravelAssistant.Infrastructure\AiTravelAssistant.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

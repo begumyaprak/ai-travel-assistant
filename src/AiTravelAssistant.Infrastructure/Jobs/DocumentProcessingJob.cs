@@ -1,6 +1,7 @@
 using AiTravelAssistant.Application.Interfaces.Repositories;
 using AiTravelAssistant.Application.Interfaces.Services;
 using AiTravelAssistant.Domain.Entities;
+using AiTravelAssistant.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
 
 namespace AiTravelAssistant.Infrastructure.Jobs;
@@ -74,7 +75,7 @@ public class DocumentProcessingJob
             await using var fileStream = await _storageService.ReadAsync(document.StoragePath, CancellationToken.None);
             var rawText = await _parserService.ParseAsync(fileStream, document.FileName, CancellationToken.None);
 
-            var textChunks = SplitIntoChunks(rawText).ToList();
+            var textChunks = TextChunker.Split(rawText, ChunkSize, ChunkOverlap).ToList();
 
             var domainChunks = new List<DocumentChunk>();
             var indexRequests = new List<ChunkIndexRequest>();
@@ -114,18 +115,4 @@ public class DocumentProcessingJob
         }
     }
 
-    private static IEnumerable<(string Content, int Index)> SplitIntoChunks(string text)
-    {
-        var position = 0;
-        var chunkIndex = 0;
-
-        while (position < text.Length)
-        {
-            var end = Math.Min(position + ChunkSize, text.Length);
-            yield return (text[position..end], chunkIndex++);
-
-            if (end == text.Length) break;
-            position += ChunkSize - ChunkOverlap;
-        }
-    }
 }

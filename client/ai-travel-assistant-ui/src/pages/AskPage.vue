@@ -5,10 +5,23 @@ import SourceCard from '@/components/SourceCard.vue'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
+import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 
 const store = useQaStore()
 const question = ref('')
+const destination = ref('')
+const category = ref('')
 const validationError = ref('')
+
+const categories = [
+  'HotelPolicy',
+  'DestinationGuide',
+  'BookingFAQ',
+  'CancellationRules',
+  'TransferInfo',
+  'SupportNotes',
+]
 
 const EXAMPLE_QUESTIONS = [
   '"Hotel checkout time in Kyoto"',
@@ -29,7 +42,11 @@ async function ask() {
     validationError.value = 'Please enter at least 3 characters.'
     return
   }
-  await store.ask(question.value.trim())
+  await store.ask(
+    question.value.trim(),
+    destination.value.trim() || undefined,
+    category.value || undefined,
+  )
 }
 
 function useExample(q: string) {
@@ -58,10 +75,34 @@ function onKeydown(event: KeyboardEvent) {
         rows="4"
         @keydown="onKeydown"
       />
+      <div class="search-filters">
+        <div class="filter-field">
+          <label for="ask-destination">Destination <span>optional</span></label>
+          <InputText
+            id="ask-destination"
+            v-model="destination"
+            placeholder="e.g. Tokyo, Japan"
+            class="filter-control"
+          />
+        </div>
+        <div class="filter-field">
+          <label for="ask-category">Category <span>optional</span></label>
+          <Select
+            input-id="ask-category"
+            v-model="category"
+            :options="categories"
+            placeholder="All categories"
+            show-clear
+            class="filter-control"
+          />
+        </div>
+      </div>
       <div class="search-footer">
         <div class="footer-left">
           <i class="pi pi-info-circle footer-info-icon" />
-          <span class="footer-hint">AI will search all uploaded documents</span>
+          <span class="footer-hint">
+            {{ destination || category ? 'AI will search matching documents' : 'AI will search all uploaded documents' }}
+          </span>
         </div>
         <button
           class="ask-btn"
@@ -203,6 +244,34 @@ function onKeydown(event: KeyboardEvent) {
   color: #c7c4d7;
 }
 
+.search-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0 1.25rem 1rem;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.filter-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #464554;
+}
+
+.filter-field label span {
+  font-weight: 400;
+  color: #9a97aa;
+}
+
+.filter-control {
+  width: 100%;
+}
+
 .search-footer {
   display: flex;
   align-items: center;
@@ -257,6 +326,17 @@ function onKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+@media (max-width: 560px) {
+  .search-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .search-footer {
+    align-items: flex-end;
+    gap: 0.75rem;
+  }
 }
 
 .validation-error {

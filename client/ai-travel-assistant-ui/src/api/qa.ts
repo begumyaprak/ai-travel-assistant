@@ -28,6 +28,12 @@ export interface AskQuestionResponse {
   confidence: ConfidenceLevel
 }
 
+export interface AskQuestionRequest {
+  question: string
+  destination?: string
+  category?: string
+}
+
 export function normalizeQaResponse(
   raw: AskQuestionResponse & { confidence: number | ConfidenceLevel },
 ): AskQuestionResponse {
@@ -38,6 +44,6 @@ export function normalizeQaResponse(
 }
 
 export const qaApi = {
-  ask: (question: string) =>
-    api.post<{ data: AskQuestionResponse }>('/api/qa/ask', { question }),
+  ask: (request: AskQuestionRequest) =>
+    api.post<{ data: AskQuestionResponse }>('/api/qa/ask', request),
 }

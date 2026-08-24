@@ -7,16 +7,16 @@ namespace AiTravelAssistant.Application.QA.AskQuestion;
 /// </summary>
 public enum ConfidenceLevel
 {
-    /// <summary>The top retrieved chunk has a relevance score of 0.85 or above.</summary>
+    /// <summary>The top semantic reranker score is 3.0 or above.</summary>
     High,
 
-    /// <summary>The top retrieved chunk has a relevance score between 0.70 and 0.84.</summary>
+    /// <summary>The top semantic reranker score is between 2.0 and 2.99.</summary>
     Medium,
 
-    /// <summary>The top retrieved chunk has a relevance score between 0.50 and 0.69.</summary>
+    /// <summary>The top semantic reranker score is between 1.0 and 1.99, or semantic ranking is unavailable.</summary>
     Low,
 
-    /// <summary>No chunks met the minimum relevance threshold; the question could not be answered.</summary>
+    /// <summary>No semantic reranker score met the minimum relevance threshold; the question could not be answered.</summary>
     NotFound
 }
 

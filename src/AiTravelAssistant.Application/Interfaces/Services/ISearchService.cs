@@ -12,7 +12,7 @@ public interface ISearchService
     /// </summary>
     /// <param name="queryVector">The embedding vector of the user's question.</param>
     /// <param name="query">The raw question text used for semantic re-ranking.</param>
-    /// <param name="topK">The maximum number of results to return.</param>
+    /// <param name="candidateCount">The number of retrieval candidates to return for downstream reranking and selection.</param>
     /// <param name="destination">An optional destination filter to narrow results.</param>
     /// <param name="category">An optional category filter to narrow results.</param>
     /// <param name="cancellationToken">A token to observe for cancellation requests.</param>
@@ -20,7 +20,7 @@ public interface ISearchService
     Task<IReadOnlyList<SearchResult>> SearchAsync(
         float[] queryVector,
         string query,
-        int topK,
+        int candidateCount,
         string? destination,
         string? category,
         CancellationToken cancellationToken);

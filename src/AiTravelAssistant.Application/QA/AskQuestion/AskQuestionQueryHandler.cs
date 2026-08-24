@@ -12,7 +12,8 @@ namespace AiTravelAssistant.Application.QA.AskQuestion;
 /// </summary>
 public class AskQuestionQueryHandler : IRequestHandler<AskQuestionQuery, Result<AskQuestionResponse>>
 {
-    private const int TopK = 5;
+    private const int RetrievalCandidateCount = 50;
+    private const int ContextResultCount = 5;
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(1);
     private const string NotFoundAnswer = "The uploaded documents do not contain enough information to answer this question.";
 
@@ -48,7 +49,7 @@ public class AskQuestionQueryHandler : IRequestHandler<AskQuestionQuery, Result<
     /// <returns>A successful result containing the answer, sources, and confidence level.</returns>
     public async Task<Result<AskQuestionResponse>> Handle(AskQuestionQuery request, CancellationToken cancellationToken)
     {
-        var cacheKey = BuildCacheKey(request.Question);
+        var cacheKey = BuildCacheKey(request);
 
         var cached = await _cacheService.GetAsync<AskQuestionResponse>(cacheKey, cancellationToken);
         if (cached is not null)
@@ -59,7 +60,7 @@ public class AskQuestionQueryHandler : IRequestHandler<AskQuestionQuery, Result<
         var results = await _searchService.SearchAsync(
             queryVector,
             request.Question,
-            TopK,
+            RetrievalCandidateCount,
             request.Destination,
             request.Category,
             cancellationToken);
@@ -73,45 +74,65 @@ public class AskQuestionQueryHandler : IRequestHandler<AskQuestionQuery, Result<
                 ConfidenceLevel.NotFound));
         }
 
-        var confidence = DetermineConfidence(results);
+        // Semantic ranking needs a broad candidate set, but the completion model should
+        // receive only the highest-ranked excerpts to keep its context focused.
+        var contextResults = results.Take(ContextResultCount).ToList();
+        var confidence = DetermineConfidence(contextResults);
 
         if (confidence == ConfidenceLevel.NotFound)
         {
             return Result<AskQuestionResponse>.Success(new AskQuestionResponse(
                 NotFoundAnswer,
-                results,
+                contextResults,
                 FromCache: false,
                 ConfidenceLevel.NotFound));
         }
 
-        var context = BuildContext(results);
+        var context = BuildContext(contextResults);
         var systemPrompt = BuildSystemPrompt();
         var userPrompt = BuildUserPrompt(request.Question, context);
 
         var answer = await _completionService.CompleteAsync(systemPrompt, userPrompt, cancellationToken);
 
-        var response = new AskQuestionResponse(answer, results, FromCache: false, confidence);
+        var response = new AskQuestionResponse(answer, contextResults, FromCache: false, confidence);
 
         await _cacheService.SetAsync(cacheKey, response, CacheTtl, cancellationToken);
 
         return Result<AskQuestionResponse>.Success(response);
     }
 
-    private static string BuildCacheKey(string question)
+    private static string BuildCacheKey(AskQuestionQuery request)
     {
-        var normalized = question.Trim().ToLowerInvariant();
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
-        return $"qa:{Convert.ToHexString(hash)}";
+        var normalizedQuestion = NormalizeCacheValue(request.Question);
+        var normalizedDestination = NormalizeCacheValue(request.Destination);
+        var normalizedCategory = NormalizeCacheValue(request.Category);
+        var cacheInput = $"question:{normalizedQuestion}\ndestination:{normalizedDestination}\ncategory:{normalizedCategory}";
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(cacheInput));
+        return $"qa:v2:{Convert.ToHexString(hash)}";
     }
+
+    private static string NormalizeCacheValue(string? value) =>
+        value?.Trim().ToLowerInvariant() ?? string.Empty;
 
     private static ConfidenceLevel DetermineConfidence(IReadOnlyList<SearchResult> results)
     {
-        var topScore = results.Max(r => r.RelevanceScore);
+        var semanticScores = results
+            .Where(r => r.IsSemanticScore)
+            .Select(r => r.RelevanceScore)
+            .ToList();
+
+        // Hybrid RRF scores are rank-fusion values, not calibrated relevance values.
+        // Without semantic scores we can rank sources, but cannot derive a reliable
+        // relevance threshold from that score, so report a conservative confidence.
+        if (semanticScores.Count == 0)
+            return ConfidenceLevel.Low;
+
+        var topScore = semanticScores.Max();
         return topScore switch
         {
-            >= 0.85 => ConfidenceLevel.High,
-            >= 0.70 => ConfidenceLevel.Medium,
-            >= 0.50 => ConfidenceLevel.Low,
+            >= 3.0 => ConfidenceLevel.High,
+            >= 2.0 => ConfidenceLevel.Medium,
+            >= 1.0 => ConfidenceLevel.Low,
             _ => ConfidenceLevel.NotFound
         };
     }

@@ -7,12 +7,12 @@ export const useQaStore = defineStore('qa', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function ask(question: string) {
+  async function ask(question: string, destination?: string, category?: string) {
     loading.value = true
     error.value = null
     response.value = null
     try {
-      const result = await qaApi.ask(question)
+      const result = await qaApi.ask({ question, destination, category })
       response.value = normalizeQaResponse(result.data.data)
     } catch {
       error.value = 'Something went wrong. Please try again.'

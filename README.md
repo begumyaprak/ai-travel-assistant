@@ -66,14 +66,18 @@ Clean Architecture with strict layer boundaries — Domain has zero external dep
 Question
   → Check Redis cache
   → Embed question (Azure OpenAI)
-  → Hybrid search (Azure AI Search: vector + semantic)
-  → Retrieve top-5 chunks
+  → Run keyword (BM25) + vector (HNSW/cosine) retrieval
+  → Merge rankings with Reciprocal Rank Fusion (RRF)
+  → Semantic-rerank the top 50 candidates
+  → Select the top 5 chunks
   → Build grounded prompt
   → Generate answer (gpt-4o)
   → Cache result + return answer with sources
 ```
 
 If the documents don't contain enough information, the system returns a "not found" response instead of hallucinating.
+
+Semantic reranker scores use Azure AI Search's 0–4 scale. The API maps the top score to `High` (3+), `Medium` (2–2.99), `Low` (1–1.99), or `NotFound` (below 1). If semantic ranking is unavailable, hybrid RRF scores are used for ordering only and confidence is reported conservatively as `Low`.
 
 ---
 
@@ -83,7 +87,7 @@ If the documents don't contain enough information, the system returns a "not fou
 
 - .NET 8 SDK
 - Docker Desktop
-- Node.js 18+
+- Node.js 20.19+ or 22.12+
 - Azure OpenAI resource (with `text-embedding-3-small` and `gpt-4o` deployments)
 - Azure AI Search resource
 
@@ -132,7 +136,11 @@ Create `src/AiTravelAssistant.API/appsettings.Development.json`:
 }
 ```
 
+`appsettings.Development.json` is ignored by Git. Keep real Azure endpoints and API keys in this local file (or use environment variables) and never commit them.
+
 ### 4. Create the Azure AI Search index
+
+Set `SEARCH_ENDPOINT` and `SEARCH_API_KEY` in `test-documents/create-index.py`, then run:
 
 ```bash
 cd test-documents
@@ -142,13 +150,16 @@ python3 create-index.py
 ### 5. Run database migrations
 
 ```bash
+dotnet tool install --global dotnet-ef --version "8.*"
 dotnet ef database update --project src/AiTravelAssistant.Infrastructure --startup-project src/AiTravelAssistant.API
 ```
 
 ### 6. Start the backend
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/AiTravelAssistant.API --no-launch-profile
+ASPNETCORE_ENVIRONMENT=Development \
+ASPNETCORE_URLS=http://localhost:5168 \
+dotnet run --project src/AiTravelAssistant.API --no-launch-profile
 ```
 
 API available at `http://localhost:5168`  
@@ -165,6 +176,19 @@ npm run dev
 
 Frontend available at `http://localhost:5173`
 
+### 8. Generate sample documents (optional)
+
+The repository includes a generator for upload-ready DOCX files:
+
+```bash
+python3 -m venv /tmp/ai-travel-docgen
+/tmp/ai-travel-docgen/bin/pip install python-docx
+cd test-documents
+/tmp/ai-travel-docgen/bin/python generate.py
+```
+
+This creates Barcelona hotel policy, Rome destination guide, Tokyo destination guide, and travel insurance documents in `test-documents/`. Generated DOCX/PDF files are ignored by Git.
+
 ---
 
 ## API Endpoints
@@ -180,6 +204,8 @@ POST   /api/qa/ask                    Ask a question
 GET    /health                        Health check
 ```
 
+The Q&A request accepts optional `destination` and `category` fields. The frontend exposes both filters on the Ask page.
+
 ---
 
 ## Key Design Decisions
@@ -190,9 +216,9 @@ GET    /health                        Health check
 
 **Grounding rule** — if the top search result has a relevance score below the threshold, the system returns "not found" without calling gpt-4o. No hallucinations.
 
-**Redis caching** — identical questions (after normalization) hit the cache instead of Azure OpenAI. Saves cost and drops response time from ~2s to ~50ms.
+**Redis caching** — identical question/filter combinations (question + destination + category, after normalization) hit the cache instead of Azure OpenAI. This prevents a response produced for one destination or category from being reused for another.
 
-**Chunking with overlap** — documents are split into 2000-character chunks with 200-character overlap. Overlap prevents context loss at chunk boundaries.
+**Chunking with overlap** — documents are split into chunks of at most 2,000 characters with approximately 200 characters of overlap. The chunker prefers paragraph, sentence, and word boundaries to avoid cutting meaningful text where possible.
 
 ---
 
@@ -203,9 +229,9 @@ This project demonstrates:
 | Skill | Implementation |
 |---|---|
 | Clean Architecture | 4-layer separation with strict dependency inversion |
-| RAG Pipeline | Full document pipeline: chunking → embedding → vector search → grounded generation |
+| RAG Pipeline | Full document pipeline: natural-boundary chunking → embedding → keyword/vector hybrid retrieval → RRF → semantic reranking → grounded generation |
 | Azure AI Integration | Azure OpenAI + Azure AI Search, not a wrapper |
 | Async Processing | Hangfire background jobs with retry logic and status tracking |
-| Caching Strategy | Redis with SHA256-keyed Q&A response cache |
+| Caching Strategy | Redis with SHA256-keyed question + filter response cache |
 | API Design | Consistent envelope, typed error codes, trace IDs, health checks |
 | Vue 3 Frontend | Composition API, Pinia, reactive auto-refresh, PrimeVue |
